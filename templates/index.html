@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="icon" href="img/pnc.jpg">
+    <style>
+        body { padding: 20px; }
+        .user-card { margin-bottom: 20px; }
+        .action-buttons { margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="mb-4">PNC-Student Management System</h1>
+        
+        <!-- Add User Form -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5>Add New User</h5>
+            </div>
+            <div class="card-body">
+                <form id="addUserForm">
+                    <div class="row g-2">
+                        <div class="col-md-6">
+                            <label for="name" class="form-label">Name</label>
+                            <input type="text" class="form-control" id="name" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="age" class="form-label">Age</label>
+                            <input type="number" class="form-control" id="age" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="gender" class="form-label">Gender</label>
+                            <select class="form-select" id="gender" required>
+                                <option value="">Select...</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="city" class="form-label">City</label>
+                            <input type="text" class="form-control" id="city" required>
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary">Add User</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Users List -->
+        <h2 class="mb-3">Users</h2>
+        <div id="usersList" class="row">
+            <!-- Users will be loaded here -->
+        </div>
+    </div>
+
+    <!-- Edit User Modal -->
+    <div class="modal fade" id="editUserModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit User</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editUserForm">
+                        <input type="hidden" id="editUserId">
+                        <div class="mb-3">
+                            <label for="editName" class="form-label">Name</label>
+                            <input type="text" class="form-control" id="editName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editAge" class="form-label">Age</label>
+                            <input type="number" class="form-control" id="editAge" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editEmail" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="editEmail" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editGender" class="form-label">Gender</label>
+                            <select class="form-select" id="editGender" required>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editCity" class="form-label">City</label>
+                            <input type="text" class="form-control" id="editCity" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="saveChangesBtn">Save changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const API_BASE_URL = 'http://127.0.0.1:8000';
+        let editModal = null;
+
+        // Initialize the modal when the page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            editModal = new bootstrap.Modal(document.getElementById('editUserModal'));
+            loadUsers();
+            
+            // Add user form submission
+            document.getElementById('addUserForm').addEventListener('submit', handleAddUser);
+            
+            // Save changes button in modal
+            document.getElementById('saveChangesBtn').addEventListener('click', handleUpdateUser);
+        });
+
+        // Load all users
+        async function loadUsers() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/users`);
+                const users = await response.json();
+                displayUsers(users);
+            } catch (error) {
+                console.error('Error loading users:', error);
+                alert('Error loading users. Check console for details.');
+            }
+        }
+
+        // Display users in the UI
+        function displayUsers(users) {
+            const usersList = document.getElementById('usersList');
+            usersList.innerHTML = '';
+
+            if (users.length === 0) {
+                usersList.innerHTML = '<p>No users found.</p>';
+                return;
+            }
+
+            users.forEach(user => {
+                const userCard = document.createElement('div');
+                userCard.className = 'col-md-6 col-lg-4 mb-4';
+                userCard.innerHTML = `
+                    <div class="card user-card">
+                        <div class="card-body">
+                            <h5 class="card-title">${user.name}</h5>
+                            <p class="card-text">
+                                <strong>Email:</strong> ${user.email}<br>
+                                <strong>Age:</strong> ${user.age}<br>
+                                <strong>Gender:</strong> ${user.gender}<br>
+                                <strong>City:</strong> ${user.city}
+                            </p>
+                            <div class="action-buttons">
+                                <button class="btn btn-sm btn-primary edit-btn" data-id="${user.id}">Edit</button>
+                                <button class="btn btn-sm btn-danger delete-btn" data-id="${user.id}">Delete</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                usersList.appendChild(userCard);
+            });
+
+            // Add event listeners to the new buttons
+            document.querySelectorAll('.edit-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => openEditModal(e.target.dataset.id));
+            });
+
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => deleteUser(e.target.dataset.id));
+            });
+        }
+
+        // Handle add user form submission
+        async function handleAddUser(e) {
+            e.preventDefault();
+            
+            const userData = {
+                name: document.getElementById('name').value,
+                age: parseInt(document.getElementById('age').value),
+                email: document.getElementById('email').value,
+                gender: document.getElementById('gender').value,
+                city: document.getElementById('city').value
+            };
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/users`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(userData)
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to add user');
+                }
+
+                // Clear the form
+                e.target.reset();
+                // Reload the users list
+                loadUsers();
+                alert('User added successfully!');
+            } catch (error) {
+                console.error('Error adding user:', error);
+                alert(`Error: ${error.message}`);
+            }
+        }
+
+        // Open edit modal with user data
+        async function openEditModal(userId) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/users/${userId}`);
+                if (!response.ok) throw new Error('Failed to fetch user data');
+                
+                const user = await response.json();
+                
+                // Fill the form with user data
+                document.getElementById('editUserId').value = user.id;
+                document.getElementById('editName').value = user.name;
+                document.getElementById('editAge').value = user.age;
+                document.getElementById('editEmail').value = user.email;
+                document.getElementById('editGender').value = user.gender;
+                document.getElementById('editCity').value = user.city;
+                
+                // Show the modal
+                editModal.show();
+            } catch (error) {
+                console.error('Error fetching user data:', error);
+                alert('Error loading user data. Please try again.');
+            }
+        }
+
+        // Handle update user
+        async function handleUpdateUser() {
+            const userId = document.getElementById('editUserId').value;
+            const userData = {
+                name: document.getElementById('editName').value,
+                age: parseInt(document.getElementById('editAge').value),
+                email: document.getElementById('editEmail').value,
+                gender: document.getElementById('editGender').value,
+                city: document.getElementById('editCity').value
+            };
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(userData)
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to update user');
+                }
+
+                // Hide the modal
+                editModal.hide();
+                // Reload the users list
+                loadUsers();
+                alert('User updated successfully!');
+            } catch (error) {
+                console.error('Error updating user:', error);
+                alert(`Error: ${error.message}`);
+            }
+        }
+
+        // Delete a user
+        async function deleteUser(userId) {
+            if (!confirm('Are you sure you want to delete this user?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to delete user');
+                }
+
+                // Reload the users list
+                loadUsers();
+                alert('User deleted successfully!');
+            } catch (error) {
+                console.error('Error deleting user:', error);
+                alert(`Error: ${error.message}`);
+            }
+        }
+    </script>
+</body>
+</html>
